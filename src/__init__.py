@@ -50,7 +50,7 @@ class Packager(object):
         """
         Only install the package if not yet installed
 
-        When show_warnings is True already install package will
+        When show_warnings is True already installed package will
         generate a message warning the user.
         """
         if name not in self.installed_packages:
