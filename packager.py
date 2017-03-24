@@ -33,7 +33,8 @@ def main():
             pkg.remove(arguments[0])
 
         elif command == 'LIST':
-            pkg.print_list()
+            for package_name in pkg.list():
+                print("\t%s" % package_name)
 
         elif command == 'END':
             sys.exit(0)

@@ -17,20 +17,36 @@ class Packager(object):
         # Contains the installed packages and their dependencies
         self.installed_packages = Set()
 
-        # Contains the requested installed packages
-        # stores the intend, those will only be removed if
-        # requested by the user
+        # Contains packages the user manually installed
         self.manually_installed_packages = Set()
 
-        # if foo depend on bar and baz then:
+        # Contains the dependency registry, if foo depends on bar and baz then:
         # self.dependencies = {foo: ['bar', 'baz']}
         self.dependencies = defaultdict(list)
 
-        # if foo depend on bar and baz then:
+        # Reverse dependency registry, if foo depend on bar and baz then:
         # self.reverse_dependencies = {'bar': ['foo'], 'baz': ['foo']}
         self.reverse_dependencies = defaultdict(list)
 
-    def install_once(self, name, show_warnings=True):
+    def install(self, name):
+        """
+        Install a package and its dependencies.
+        """
+        self._install(name)
+        self.manually_installed_packages.add(name)
+
+    def _install(self, name, show_warnings=True):
+        """
+        Install a package and its dependencies.
+
+        if a dependency is already installed it wont be re-installed
+        """
+        for dependency_name in self.dependencies[name]:
+            self._install(dependency_name, show_warnings=False)
+
+        self._safe_install(name, show_warnings=show_warnings)
+
+    def _safe_install(self, name, show_warnings=True):
         """
         Only install the package if not yet installed
 
@@ -44,83 +60,58 @@ class Packager(object):
         elif show_warnings:
             print("\t%s is already installed." % name)
 
-    def install(self, name):
-        """
-        Install a package and its dependencies.
-        """
-
-        self._install(name)
-        self.manually_installed_packages.add(name)
-
-    def _install(self, name, show_warnings=True):
-        """
-        Install a package and its dependencies.
-
-        if a dependency is already installed it wont be re-installed
-        """
-        for dependency_name in self.dependencies[name]:
-            self._install(dependency_name, show_warnings=False)
-
-        self.install_once(name, show_warnings=show_warnings)
-
     def remove(self, name):
         """
         Remove a package and its dependencies.
         """
-        if self._remove(name):
-            self.manually_installed_packages.remove(name)
+        self._remove(name)
+        self.manually_installed_packages.remove(name)
 
     def _remove(self, name, show_warnings=True, is_dependency=False):
         """
         Remove a package and its dependencies.
 
-        if a dependency is shared it wont be removed.
-
-        returns True if the package was removed else False
+        If a dependency is used by an installed package it wont be removed.
         """
-        # We don't want to uninstall dependencies which were also manually
-        # installed
+        # We don't want to uninstall dependencies which were manually installed
         if is_dependency and name in self.manually_installed_packages:
-            return False
+            return
 
         if name not in self.installed_packages:
             print("\t%s is not installed." % name)
-            return False
+            return
 
-        package_was_removed = self.remove_if_not_needed(
-            name, show_warnings=show_warnings)
+        self._safe_remove(name, show_warnings=show_warnings)
 
-        for dependency_name in self.dependencies.get(name, []):
+        for dependency_name in self.dependencies[name]:
             self._remove(
                 dependency_name, show_warnings=False, is_dependency=True)
 
-        if package_was_removed:
-            print("\tRemoving %s" % name)
-            return True
-        else:
-            return False
-
-    def remove_if_not_needed(self, name, show_warnings=True):
+    def _safe_remove(self, name, show_warnings=True):
         """
         Remove a package only if not a dependency of an installed package.
-
-        When is_dependency is False the warning
         """
         if self.is_package_a_dependency(name):
             if show_warnings:
                 print("\t%s is still needed." % name)
 
-            return False
+            return
 
+        print("\tRemoving %s" % name)
         self.installed_packages.remove(name)
-        return True
 
     def is_package_a_dependency(self, name):
-        for dependency_name in self.reverse_dependencies[name]:
-            if dependency_name in self.installed_packages:
+        """
+        Returns true if the given package is a dependency to another
+        installed package.
+        """
+        for package_name in self.reverse_dependencies[name]:
+            # check if the package is a dependency
+            if package_name in self.installed_packages:
                 return True
 
-            if self.is_package_a_dependency(dependency_name):
+            # check if the dependencies of the package are dependencies
+            if self.is_package_a_dependency(package_name):
                 return True
 
         return False
@@ -131,17 +122,12 @@ class Packager(object):
         """
         return self.installed_packages
 
-    def print_list(self):
-        """
-        print a list of installed packages
-        """
-        for package_name in self.list():
-                print("\t%s" % package_name)
-
-    def depend(self, package_name, *dependencies):
+    def depend(self, name, *dependencies):
         """
         create a set of dependencies for a package
         """
-        self.dependencies[package_name] = dependencies
+        self.dependencies[name] = dependencies
+
+        # fill up the revert index of dependencies
         for dependency_name in dependencies:
-            self.reverse_dependencies[dependency_name].append(package_name)
+            self.reverse_dependencies[dependency_name].append(name)
