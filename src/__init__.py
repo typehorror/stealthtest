@@ -65,7 +65,8 @@ class Packager(object):
         Remove a package and its dependencies.
         """
         self._remove(name)
-        self.manually_installed_packages.remove(name)
+        if name in self.manually_installed_packages:
+            self.manually_installed_packages.remove(name)
 
     def _remove(self, name, show_warnings=True, is_dependency=False):
         """
