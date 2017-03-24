@@ -3,6 +3,16 @@ from collections import defaultdict
 
 
 class Packager(object):
+    """
+    This is a package with dependency management.
+
+    When installed manually a package can only be uninstalled manually
+    When a package is being removed its dependencies are removed too
+    If a dependency is still needed by an another library it will not be
+    uninstalled.
+
+    """
+
     def __init__(self):
         # Contains the installed packages and their dependencies
         self.installed_packages = Set()
@@ -35,6 +45,10 @@ class Packager(object):
             print("\t%s is already installed." % name)
 
     def install(self, name):
+        """
+        Install a package and its dependencies.
+        """
+
         self._install(name)
         self.manually_installed_packages.add(name)
 
@@ -50,6 +64,9 @@ class Packager(object):
         self.install_once(name, show_warnings=show_warnings)
 
     def remove(self, name):
+        """
+        Remove a package and its dependencies.
+        """
         if self._remove(name):
             self.manually_installed_packages.remove(name)
 
