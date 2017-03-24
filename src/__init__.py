@@ -77,12 +77,16 @@ class Packager(object):
         if is_dependency and name in self.manually_installed_packages:
             return
 
+        # If the package to remove has not been installed
         if name not in self.installed_packages:
             print("\t%s is not installed." % name)
             return
 
+        # Remove the package
         self._safe_remove(name, show_warnings=show_warnings)
 
+        # Remove the package dependencies and the dependencies of those
+        # dependencies... recursively
         for dependency_name in self.dependencies[name]:
             self._remove(
                 dependency_name, show_warnings=False, is_dependency=True)
@@ -110,7 +114,8 @@ class Packager(object):
             if package_name in self.installed_packages:
                 return True
 
-            # check if the dependencies of the package are dependencies
+            # check if the dependent has dependent package as
+            # a dependency of an installed package
             if self.is_package_a_dependency(package_name):
                 return True
 
