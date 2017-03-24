@@ -7,13 +7,18 @@ def main():
     pkg = Packager()
 
     while(True):
-        cmd = raw_input("> ")
+        try:
+            cmd = raw_input("> ")
+        except KeyboardInterrupt:  # <CTRL> + <C> is error exit
+            sys.exit(1)
+        except EOFError:  # <CTRL> + <D> is good exit
+            sys.exit(0)
 
-        # read all the words the use entered but without any surrounding spaces
+        # read all the words the user entered stripped of surrounding spaces
         words = [word.strip() for word in re.split('\W+', cmd) if word.strip()]
 
         # if you didn't enter anything and press <ENTER>
-        if len(words) == 0:
+        if not words:
             continue
 
         # the first word is the main command
