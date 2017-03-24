@@ -63,6 +63,9 @@ class Packager(object):
     def remove(self, name):
         """
         Remove a package and its dependencies.
+
+        Once a removed request has been emitted, successful or not,
+        the package will be removed from the manually installed package list.
         """
         self._remove(name)
         if name in self.manually_installed_packages:
