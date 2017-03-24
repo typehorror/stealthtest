@@ -20,11 +20,10 @@ def main():
         command = words[0]
 
         # the following words are the arguments
-        if len(words) > 1:
-            arguments = words[1:]
+        arguments = words[1:]
 
         if command == 'DEPEND':
-            pkg.depend(arguments[0], *arguments[1:])
+            pkg.depend(*arguments)
 
         elif command == 'INSTALL':
             pkg.install(arguments[0])
